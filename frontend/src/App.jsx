@@ -1,28 +1,21 @@
 import React from 'react'
-import Navbar from './components/Navbar'
-import Hero from './components/Hero'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import Home from './pages/Home'
+import GetStarted from './pages/GetStarted'
+import MapPage from './pages/MapPage'
 import './App.css'
 
 function App() {
   return (
-    <div className="app-container">
-      <Navbar />
-      <main>
-        <Hero />
-        {/* Additional sections like Features, Testimonials, etc. will go here */}
-      </main>
-      <footer style={{
-        padding: '40px 0',
-        textAlign: 'center',
-        color: 'var(--text-secondary)',
-        borderTop: '1px solid var(--glass-border)',
-        marginTop: 'auto'
-      }}>
-        <div className="container">
-          <p>© 2026 hr.ai - The Intelligent Recruitment Marketing Platform</p>
-        </div>
-      </footer>
-    </div>
+    <Router>
+      <div className="app-container">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/get-started" element={<GetStarted />} />
+          <Route path="/map" element={<MapPage />} />
+        </Routes>
+      </div>
+    </Router>
   )
 }
 
