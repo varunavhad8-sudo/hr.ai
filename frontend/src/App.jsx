@@ -15,6 +15,7 @@ import JobSeeker from './pages/JobSeeker'
 import MyJobs from './pages/MyJobs'
 import Messages from './pages/Messages'
 import VerificationCenter from './pages/VerificationCenter'
+import VerifyOTP from './pages/VerifyOTP'
 import './App.css'
 
 function App() {
@@ -38,6 +39,7 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/job-seeker" element={<JobSeeker />} />
           <Route path="/verify" element={<VerificationCenter />} />
+          <Route path="/verify-otp" element={<VerifyOTP />} />
         </Routes>
       </div>
     </Router>
