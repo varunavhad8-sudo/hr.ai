@@ -48,7 +48,7 @@ const Hero = () => {
         }}
       >
         <Sparkles size={16} />
-        The World's First AI Recruitment Marketing Platform
+        The World's First AI-Powered Talent Sourcing Engine
       </motion.div>
 
       <motion.h1
@@ -63,7 +63,7 @@ const Hero = () => {
           fontWeight: 800
         }}
       >
-        Hire the future with <span className="gradient-text">Intelligent Marketing</span>
+        Find & Hire Top Talent <span className="gradient-text">in Hours, Not Weeks</span>
       </motion.h1>
 
       <motion.p
@@ -78,7 +78,7 @@ const Hero = () => {
           fontWeight: 400
         }}
       >
-        Hr.ai automates your employer branding and job marketing. Attract top-tier talent with data-driven AI campaigns that convert.
+        Hr.ai connects founders and HR managers with pre-matched candidates from LinkedIn, Naukri, and Indeed — automatically.
       </motion.p>
 
       <motion.div

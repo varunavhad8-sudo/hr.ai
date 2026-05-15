@@ -221,10 +221,11 @@ const MapPage = () => {
               Trending Zones
             </h3>
             {[
-              { city: 'San Francisco', activity: 'High', color: '#3b82f6', pos: [37.7749, -122.4194] },
-              { city: 'London', activity: 'Medium', color: '#8b5cf6', pos: [51.5074, -0.1278] },
-              { city: 'Austin', activity: 'High', color: '#3b82f6', pos: [30.2672, -97.7431] },
-              { city: 'Berlin', activity: 'Growing', color: '#10b981', pos: [52.5200, 13.4050] }
+              { city: 'Mumbai', activity: 'High', color: '#3b82f6', pos: [19.0760, 72.8777] },
+              { city: 'Bangalore', activity: 'High', color: '#3b82f6', pos: [12.9716, 77.5946] },
+              { city: 'Delhi NCR', activity: 'Growing', color: '#10b981', pos: [28.6139, 77.2090] },
+              { city: 'Pune', activity: 'Medium', color: '#8b5cf6', pos: [18.5204, 73.8567] },
+              { city: 'Hyderabad', activity: 'Growing', color: '#10b981', pos: [17.3850, 78.4867] }
             ].map((zone, i) => (
               <div 
                 key={i} 

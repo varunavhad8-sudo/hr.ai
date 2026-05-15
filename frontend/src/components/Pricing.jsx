@@ -7,17 +7,17 @@ const plans = [
   {
     name: "Starter",
     price: "0",
-    description: "Perfect for exploring AI-powered sourcing.",
-    features: ["14-Day Free Trial", "5 AI Sourcing Credits", "Basic Employer Branding", "Community Support"],
+    description: "Perfect for founders making 1-2 hires per year",
+    features: ["14-Day Free Trial", "10 AI Matching Credits", "Basic Sourcing Tools", "Community Support"],
     icon: <Zap size={24} />,
     buttonText: "Start Trial",
     link: "/get-started"
   },
   {
     name: "Pro",
-    price: "99",
-    description: "For scaling teams that need more power.",
-    features: ["Unlimited Trial Days", "100 AI Credits / month", "Advanced Branding AI", "Priority Email Support", "Predictive Analytics"],
+    price: "2,499",
+    description: "For growing teams hiring regularly",
+    features: ["Unlimited Trial Days", "250 AI Credits / month", "Advanced Matching AI", "Priority Email Support", "Predictive Hiring Analytics"],
     icon: <Shield size={24} />,
     buttonText: "Get Pro",
     link: "/get-started",
@@ -26,7 +26,7 @@ const plans = [
   {
     name: "Enterprise",
     price: "Custom",
-    description: "Custom solutions for global organizations.",
+    description: "Custom solutions for staffing agencies and large businesses",
     features: ["Unlimited AI Credits", "Custom AI Model Training", "Dedicated Account Manager", "SSO & Security Suite", "API Access"],
     icon: <Crown size={24} />,
     buttonText: "Contact Sales",
@@ -92,7 +92,9 @@ const Pricing = () => {
 
             <div style={{ marginBottom: '32px' }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                <span style={{ fontSize: '3rem', fontWeight: 800 }}>${plan.price}</span>
+                <span style={{ fontSize: '3rem', fontWeight: 800 }}>
+                  {plan.price !== "Custom" && "₹"}{plan.price}
+                </span>
                 {plan.price !== "Custom" && <span style={{ color: 'var(--text-secondary)' }}>/mo</span>}
               </div>
             </div>

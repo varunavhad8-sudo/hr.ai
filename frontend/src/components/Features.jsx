@@ -1,71 +1,93 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Zap, Target, BarChart3, Users } from 'lucide-react';
+import { Search, Zap, BarChart3, PenTool, Globe, Layers } from 'lucide-react';
 
 const features = [
   {
-    icon: <Zap size={24} />,
-    title: "AI Candidate Matching",
-    description: "Automatically score and rank candidates based on skill DNA and cultural fit with 98% accuracy."
+    icon: <Search className="text-accent-primary" />,
+    title: "AI-Powered Sourcing",
+    description: "Deep-search LinkedIn, Naukri, and Indeed simultaneously to find pre-matched talent that others miss."
   },
   {
-    icon: <Target size={24} />,
-    title: "Automated Branding",
-    description: "AI-generated employer branding content that resonates with your target talent personas across all social channels."
+    icon: <Zap className="text-accent-primary" />,
+    title: "Instant Matching",
+    description: "Our AI analyzes skill sets and cultural fit to deliver top-tier candidates in hours, not weeks."
   },
   {
-    icon: <BarChart3 size={24} />,
-    title: "Predictive Analytics",
-    description: "Forecast your time-to-hire and sourcing costs before you even post the job opening."
+    icon: <Globe className="text-accent-primary" />,
+    title: "Automated Outreach",
+    description: "Personalized, multi-channel candidate engagement that feels human but scales with AI efficiency."
   },
   {
-    icon: <Users size={24} />,
-    title: "Talent Pool CRM",
-    description: "Nurture passive talent with automated, personalized outreach campaigns that feel human."
+    icon: <BarChart3 className="text-accent-primary" />,
+    title: "Predictive Hiring",
+    description: "Forecast candidate availability and salary expectations before you even start the interview process."
+  },
+  {
+    icon: <PenTool className="text-accent-primary" />,
+    title: "Verified Portfolios",
+    description: "Auto-verify candidate experience and project portfolios through AI-driven validation checks."
+  },
+  {
+    icon: <Layers className="text-accent-primary" />,
+    title: "One-Click Sync",
+    description: "Shortlist candidates and push them directly into your existing ATS (Lever, Greenhouse, etc.) instantly."
   }
 ];
 
 const Features = () => {
   return (
-    <section id="features" className="container">
-      <div style={{ textAlign: 'center', marginBottom: '60px' }}>
-        <h2 style={{ fontSize: '3rem', marginBottom: '16px' }}>
-          Next-Gen <span className="gradient-text">Recruitment Arsenal</span>
-        </h2>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '1.2rem', maxWidth: '700px', margin: '0 auto' }}>
-          Stop sourcing, start hiring. Our AI platform handles the marketing heavy lifting so you can focus on the people.
-        </p>
-      </div>
-
-      <div className="grid-features">
-        {features.map((feature, index) => (
-          <motion.div
-            key={index}
+    <section id="features" style={{ padding: '100px 0', position: 'relative', overflow: 'hidden' }}>
+      <div className="container">
+        <div style={{ textAlign: 'center', marginBottom: '80px' }}>
+          <motion.h2 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: index * 0.1 }}
-            className="glass feature-card"
+            transition={{ duration: 0.6 }}
+            style={{ fontSize: '3rem', marginBottom: '20px' }}
           >
-            <div style={{
-              background: 'var(--gradient-main)',
-              width: '50px',
-              height: '50px',
-              borderRadius: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: '24px',
-              color: 'white'
-            }}>
-              {feature.icon}
-            </div>
-            <h3 style={{ fontSize: '1.5rem', marginBottom: '12px' }}>{feature.title}</h3>
-            <p style={{ color: 'var(--text-secondary)', lineHeight: '1.7' }}>
-              {feature.description}
-            </p>
-          </motion.div>
-        ))}
+            Everything you need to <span className="gradient-text">scale your team</span>
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            style={{ fontSize: '1.2rem', color: 'var(--text-secondary)', maxWidth: '700px', margin: '0 auto' }}
+          >
+            Hr.ai combines advanced machine learning with recruitment best practices to give your team an unfair advantage in the talent market.
+          </motion.p>
+        </div>
+
+        <div className="grid-features">
+          {features.map((feature, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+              viewport={{ once: true }}
+              className="glass feature-card"
+            >
+              <div style={{ 
+                width: '50px', 
+                height: '50px', 
+                borderRadius: '12px', 
+                background: 'rgba(59, 130, 246, 0.1)', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                marginBottom: '24px',
+                color: 'var(--accent-primary)'
+              }}>
+                {feature.icon}
+              </div>
+              <h3 style={{ fontSize: '1.5rem', marginBottom: '16px' }}>{feature.title}</h3>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.6' }}>
+                {feature.description}
+              </p>
+            </motion.div>
+          ))}
+        </div>
       </div>
     </section>
   );

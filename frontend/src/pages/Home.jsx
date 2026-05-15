@@ -21,7 +21,7 @@ const Home = () => {
         marginTop: '100px'
       }}>
         <div className="container">
-          <p>© 2026 Hr.ai - The Intelligent Recruitment Marketing Platform</p>
+          <p>© 2026 Hr.ai - The Intelligent Talent Sourcing Engine</p>
         </div>
       </footer>
     </>

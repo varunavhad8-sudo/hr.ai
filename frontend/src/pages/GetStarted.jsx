@@ -1,9 +1,12 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Briefcase, Users, Building, Rocket } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 
 const GetStarted = () => {
+  const navigate = useNavigate();
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-main)' }}>
       <Navbar />
@@ -41,24 +44,32 @@ const GetStarted = () => {
           <motion.div 
             initial={{ opacity: 0, x: -30 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
+            whileHover={{ 
+              scale: 1.02, 
+              borderColor: '#10b981', 
+              boxShadow: '0 0 30px rgba(16, 185, 129, 0.2)',
+              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(15, 23, 42, 0.9) 100%)'
+            }}
+            transition={{ duration: 0.4 }}
+            onClick={() => navigate('/dashboard')}
             className="glass" 
             style={{ 
               padding: '48px', 
               borderRadius: '32px', 
-              border: '1px solid rgba(59, 130, 246, 0.2)',
+              border: '1px solid rgba(16, 185, 129, 0.2)',
               textAlign: 'center',
-              background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(59, 130, 246, 0.05) 100%)',
+              background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(16, 185, 129, 0.05) 100%)',
               cursor: 'pointer',
               display: 'flex',
               flexDirection: 'column',
-              alignItems: 'center'
+              alignItems: 'center',
+              transition: 'border-color 0.3s ease, box-shadow 0.3s ease'
             }}
           >
             <div style={{ 
               width: '80px', 
               height: '80px', 
-              background: 'rgba(59, 130, 246, 0.1)', 
+              background: 'rgba(16, 185, 129, 0.1)', 
               borderRadius: '20px', 
               display: 'flex', 
               alignItems: 'center', 
@@ -95,7 +106,14 @@ const GetStarted = () => {
           <motion.div 
             initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
+            whileHover={{ 
+              scale: 1.02, 
+              borderColor: '#8b5cf6', 
+              boxShadow: '0 0 30px rgba(139, 92, 246, 0.2)',
+              background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(15, 23, 42, 0.9) 100%)'
+            }}
+            transition={{ duration: 0.4 }}
+            onClick={() => navigate('/job-seeker')}
             className="glass" 
             style={{ 
               padding: '48px', 
@@ -106,7 +124,8 @@ const GetStarted = () => {
               cursor: 'pointer',
               display: 'flex',
               flexDirection: 'column',
-              alignItems: 'center'
+              alignItems: 'center',
+              transition: 'border-color 0.3s ease, box-shadow 0.3s ease'
             }}
           >
             <div style={{ 
