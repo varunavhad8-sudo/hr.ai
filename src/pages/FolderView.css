@@ -1,0 +1,95 @@
+.folder-view-main {
+  padding: 2rem;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.folder-view-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 2rem;
+}
+
+.folder-view-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.2s ease;
+  margin-bottom: 0.5rem;
+}
+
+.btn-back:hover {
+  color: var(--text-main);
+}
+
+.folder-view-title {
+  color: var(--text-main);
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.folder-view-subtitle {
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.btn-add-candidate {
+  background-color: var(--accent-color);
+  color: var(--text-main);
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-add-candidate:hover {
+  background-color: var(--accent-hover);
+}
+
+.folder-table {
+  margin-top: 2rem;
+}
+
+.empty-folder-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+}
+
+.empty-folder-state .empty-icon {
+  color: var(--accent-color);
+  opacity: 0.3;
+  margin-bottom: 1rem;
+}
+
+.empty-folder-state .empty-title {
+  color: var(--text-main);
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem 0;
+}
+
+.empty-folder-state .empty-subtitle {
+  color: var(--text-muted);
+  margin: 0 0 1.5rem 0;
+}
