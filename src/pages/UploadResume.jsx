@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Sidebar } from '../components/Sidebar';
 import { UploadCloud, Loader2, X, CheckCircle, FileText } from 'lucide-react';
 import { useAppContext } from '../AppContext';
+import { API_BASE_URL } from '../config';
+import getAuthToken from '../utils/getAuthToken';
 import './UploadResume.css';
 
 export function UploadResume() {
@@ -13,6 +15,7 @@ export function UploadResume() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [actualFile, setActualFile] = useState(null);
   const [fileError, setFileError] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const [linkedinUrl, setLinkedinUrl] = useState('');
@@ -24,21 +27,21 @@ export function UploadResume() {
   const [newFolderName, setNewFolderName] = useState('');
   const [selectedFolderId, setSelectedFolderId] = useState('');
   const [toastMessage, setToastMessage] = useState('');
-
-  const { incrementStats, folders, createFolder, addCandidateToFolder } = useAppContext();
-
+ 
+  const { incrementStats, folders, createFolder, addCandidateToFolder, updateCandidateInDb, loadCandidates } = useAppContext();
+ 
   const handleDragOver = (e) => {
     e.preventDefault();
     if (!isUploading && !candidateData) {
       setIsDragging(true);
     }
   };
-
+ 
   const handleDragLeave = (e) => {
     e.preventDefault();
     setIsDragging(false);
   };
-
+ 
   const handleDrop = (e) => {
     e.preventDefault();
     setIsDragging(false);
@@ -46,40 +49,68 @@ export function UploadResume() {
     const files = e.dataTransfer.files;
     if (files.length > 0) processFile(files[0]);
   };
-
+ 
   const handleFileSelect = (e) => {
     if (e.target.files.length > 0) processFile(e.target.files[0]);
   };
-
-  const processFile = (file) => {
+ 
+  const processFile = async (file) => {
     setFileError('');
-    const ext = file.name.split('.').pop().toLowerCase();
-    if (!['pdf', 'doc', 'docx'].includes(ext)) {
-      setFileError('Only PDF, DOC, DOCX files allowed');
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setFileError('File too large. Maximum 5MB allowed.');
+    if (file.size > 10 * 1024 * 1024) {
+      setFileError('File too large. Maximum 10MB allowed.');
       return;
     }
     setSelectedFile(file.name);
+    setActualFile(file);
     setIsUploading(true);
     
-    setTimeout(() => {
-      setIsUploading(false);
-      setCandidateData({
-        name: "Priya Sharma",
-        initials: "PS",
-        role: "Senior HR Manager",
-        experience: "6 Years",
-        skills: ["HR Management", "Recruitment", "Talent Acquisition", "Excel"],
-        education: "MBA HR, Delhi University",
-        email: "priya.sharma@example.com",
-        linkedin: "https://linkedin.com/in/priyasharma",
-        status: "In Review"
+    try {
+      const token = await getAuthToken();
+      const formData = new FormData();
+      formData.append('resume', file);
+      
+      const response = await fetch(`${API_BASE_URL}/api/parse-resume`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
       });
-      setLinkedinUrl("https://linkedin.com/in/priyasharma");
-    }, 2000);
+      
+      if (response.status === 401) {
+        window.location.href = '/signin';
+        return;
+      }
+      
+      if (!response.ok) {
+        throw new Error('Failed to parse resume');
+      }
+      
+      const data = await response.json();
+      
+      // Bind details returned from API
+      setCandidateData({
+        name: data.name || 'Unknown',
+        initials: (data.name || 'U').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase(),
+        role: data.current_role || data.role || '',
+        experience: data.experience_years ? `${data.experience_years} Years` : '0 Years',
+        skills: data.skills || [],
+        education: data.education || '',
+        email: data.email || '',
+        linkedin: data.linkedin || '',
+        status: 'In Review' // default stage
+      });
+      
+      if (data.linkedin) {
+        setLinkedinUrl(data.linkedin);
+      }
+    } catch (err) {
+      console.error('[UploadResume] Upload/Parse error:', err.message);
+      setFileError('Error reading or parsing resume. Please try again.');
+      setSelectedFile(null);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const updateField = (field, value) => {
@@ -109,6 +140,7 @@ export function UploadResume() {
   const handleReupload = () => {
     setCandidateData(null);
     setSelectedFile(null);
+    setActualFile(null);
     setIsUploading(false);
     setSelectedFolderId('');
     setFileError('');
@@ -126,26 +158,73 @@ export function UploadResume() {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setIsSaving(true);
-    setTimeout(() => {
-      setIsSaving(false);
+    try {
+      let savedCandidateId = null;
+
+      if (candidateData) {
+        if (candidateData._id) {
+          // If it somehow already has an ID, just update it
+          await updateCandidateInDb(candidateData._id, {
+            name: candidateData.name,
+            role: candidateData.role,
+            experience: candidateData.experience,
+            skills: candidateData.skills,
+            education: candidateData.education,
+            email: candidateData.email,
+            status: candidateData.status
+          });
+          savedCandidateId = candidateData._id;
+        } else {
+          // Create new candidate with resume file
+          const formData = new FormData();
+          if (actualFile) {
+            formData.append('resume', actualFile);
+          }
+          formData.append('name', candidateData.name);
+          formData.append('role', candidateData.role);
+          
+          // Parse experience number
+          const expMatch = String(candidateData.experience).match(/\d+/);
+          formData.append('experience_years', expMatch ? expMatch[0] : 0);
+          
+          formData.append('education', candidateData.education);
+          formData.append('email', candidateData.email);
+          formData.append('stage', candidateData.status);
+          formData.append('skills', JSON.stringify(candidateData.skills));
+          
+          const newCandidate = await createCandidateInDb(formData);
+          if (newCandidate) {
+            savedCandidateId = newCandidate.id || newCandidate._id;
+          }
+        }
+        
+        // Refresh candidates from backend
+        await loadCandidates();
+      }
+
       setSaveSuccess(true);
       incrementStats();
 
-      if (selectedFolderId) {
+      if (selectedFolderId && savedCandidateId) {
         const folderName = folders.find(f => f.id === parseInt(selectedFolderId))?.name || 'Folder';
+        addCandidateToFolder(parseInt(selectedFolderId), savedCandidateId);
         setToastMessage(`Saved to Library & added to ${folderName}`);
         setTimeout(() => {
           setToastMessage('');
-          navigate('/dashboard');
+          navigate('/candidates');
         }, 2000);
       } else {
         setTimeout(() => {
-          navigate('/dashboard');
+          navigate('/candidates');
         }, 800);
       }
-    }, 1500);
+    } catch (err) {
+      console.error('[UploadResume] Failed to save candidate edits:', err.message);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -173,7 +252,6 @@ export function UploadResume() {
                 ref={fileInputRef} 
                 hidden
                 onChange={handleFileSelect}
-                accept=".pdf,.doc,.docx"
               />
               {isUploading ? (
                 <div className="upload-loading">
@@ -190,7 +268,7 @@ export function UploadResume() {
                 <div className="upload-prompt">
                   <UploadCloud size={48} className="upload-icon" />
                   <p className="upload-prompt-text">Drop resume here or click to upload</p>
-                  <p className="upload-prompt-subtext">PDF, DOC, DOCX supported</p>
+                  <p className="upload-subtitle">Supports PDF, DOCX, DOC, TXT, Images, and more</p>
                 </div>
               )}
             </div>

@@ -54,7 +54,7 @@
 
 .btn-upload-header {
   background-color: var(--accent-color);
-  color: var(--text-main);
+  color: var(--accent-btn-text);
   padding: 0.5rem 1rem;
   border: none;
   border-radius: 8px;
@@ -145,6 +145,8 @@
   font-family: 'Inter', sans-serif;
   border-collapse: separate;
   border-spacing: 0;
+  position: relative;
+  min-height: 350px;
 }
 
 .table-header-row {
@@ -435,6 +437,10 @@
   justify-content: center;
   padding: 64px 24px;
   text-align: center;
+  position: absolute;
+  width: 100%;
+  left: 0;
+  top: 60px; /* Below the header */
 }
 
 .empty-icon {

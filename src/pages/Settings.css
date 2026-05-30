@@ -115,7 +115,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-main);
+  color: #0a0a0a;
   font-weight: 700;
   font-size: 32px;
   margin-right: 24px;
@@ -211,12 +211,12 @@
 
 .btn-primary {
   background-color: var(--accent-color);
-  color: var(--text-main);
+  color: #0a0a0a;
   border: none;
   border-radius: 0.5rem;
   padding: 10px 24px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: background-color 0.2s ease;
 }

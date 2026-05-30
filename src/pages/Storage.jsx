@@ -117,7 +117,7 @@ export function Storage() {
             
             <div className="premium-right">
               <div className="price-display">
-                <span className="price-amount">₹499</span>
+                <span className="price-amount">₹399</span>
                 <span className="price-period">/month</span>
               </div>
               <p className="price-subtext">Cancel anytime</p>

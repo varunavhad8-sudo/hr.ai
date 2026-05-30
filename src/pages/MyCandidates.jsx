@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { Sidebar } from '../components/Sidebar';
 import { useAppContext } from '../AppContext';
 import { Search, Archive, Download, Grid, FileText, Loader2 } from 'lucide-react';
+import { CsvImportModal } from '../components/CsvImportModal';
 import * as XLSX from 'xlsx-js-style';
 import './MyCandidates.css';
 
 export function MyCandidates() {
   const navigate = useNavigate();
-  const { candidates, folders, addCandidateToFolder } = useAppContext();
+  const { candidates, folders, addCandidateToFolder, bulkImportCandidates } = useAppContext();
   
   const mockCandidates = [...candidates].sort((a, b) => new Date(b.addedOn) - new Date(a.addedOn));
   const [activeFilter, setActiveFilter] = useState('All');
@@ -17,6 +18,7 @@ export function MyCandidates() {
   const [displayCount, setDisplayCount] = useState(6);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
+  const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
   const [activeCandidateForFolder, setActiveCandidateForFolder] = useState(null);
   const [addFolderSearchQuery, setAddFolderSearchQuery] = useState('');
   const [toastMessage, setToastMessage] = useState('');
@@ -186,6 +188,17 @@ export function MyCandidates() {
     setTimeout(() => setToastMessage(''), 2000);
   };
 
+  const handleCsvImport = async (parsedData) => {
+    try {
+      const result = await bulkImportCandidates(parsedData);
+      setToastMessage(`Imported ${result.importedCount} candidates${result.skippedEmails.length > 0 ? ` (${result.skippedEmails.length} skipped duplicates)` : ''}`);
+      setTimeout(() => setToastMessage(''), 4000);
+    } catch (err) {
+      setToastMessage(`Import failed: ${err.message}`);
+      setTimeout(() => setToastMessage(''), 4000);
+    }
+  };
+
   return (
     <div className="dashboard-layout">
       <Sidebar />
@@ -221,6 +234,9 @@ export function MyCandidates() {
                 </div>
               )}
             </div>
+            <button className="btn-upload-header" style={{marginRight: '8px', backgroundColor: '#333', color: '#fff'}} onClick={() => setIsCsvModalOpen(true)}>
+              Import CSV
+            </button>
             <button className="btn-upload-header" onClick={() => navigate('/upload')}>
               Upload Resume
             </button>
@@ -396,6 +412,12 @@ export function MyCandidates() {
             {toastMessage}
           </div>
         )}
+
+        <CsvImportModal 
+          isOpen={isCsvModalOpen} 
+          onClose={() => setIsCsvModalOpen(false)} 
+          onImport={handleCsvImport} 
+        />
 
       </main>
     </div>

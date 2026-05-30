@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Users, Folder, Upload, Settings, Database } from 'lucide-react';
+import { useAppContext } from '../AppContext';
 import './Sidebar.css';
 
 export function Sidebar() {
@@ -14,6 +15,11 @@ export function Sidebar() {
     { label: 'Storage', path: '/storage', icon: <Database size={20} /> },
     { label: 'Settings', path: '/settings', icon: <Settings size={20} /> }
   ];
+
+  const { currentUser, isLoadingUser } = useAppContext();
+
+  const userName = isLoadingUser ? '...' : (currentUser?.name || 'User');
+  const userEmail = currentUser?.email || '';
 
   return (
     <aside className="sidebar">
@@ -41,14 +47,12 @@ export function Sidebar() {
       </nav>
 
       <Link to="/settings" className="sidebar-footer" style={{ textDecoration: 'none' }}>
-        <img 
-          src="https://i.pravatar.cc/100?img=33" 
-          alt="User avatar" 
-          className="user-avatar" 
-        />
+        <div className="user-avatar">
+          {(userName[0] || 'U').toUpperCase()}
+        </div>
         <div className="user-info">
-          <span className="user-name">Alex Morgan</span>
-          <span className="user-role">HR Manager</span>
+          <span className="user-name">{userName}</span>
+          <span className="user-role">{userEmail || 'HR Manager'}</span>
         </div>
       </Link>
     </aside>

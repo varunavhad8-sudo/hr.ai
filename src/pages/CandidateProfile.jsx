@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Sidebar } from '../components/Sidebar';
 import { useAppContext } from '../AppContext';
+import { API_BASE_URL } from '../config';
+import getAuthToken from '../utils/getAuthToken';
 import { ArrowLeft, ExternalLink, X, FileText, CheckCircle2 } from 'lucide-react';
 import * as XLSX from 'xlsx-js-style';
 import './CandidateProfile.css';
@@ -9,11 +11,11 @@ import './CandidateProfile.css';
 export function CandidateProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { candidates } = useAppContext();
+  const { candidates, deleteCandidateFromDb, updateCandidateInDb } = useAppContext();
   
   // Find candidate or use fallback sample data
-  const initialData = candidates.find(c => c.id === parseInt(id)) || {
-    id: parseInt(id),
+  const initialData = candidates.find(c => String(c._id || c.id) === String(id)) || {
+    id: id,
     name: 'Rahul Sharma',
     role: 'Senior Frontend Engineer',
     status: 'Shortlisted',
@@ -25,7 +27,7 @@ export function CandidateProfile() {
   };
 
   const [candidate, setCandidate] = useState(initialData);
-  const [notes, setNotes] = useState('');
+  const [notes, setNotes] = useState(initialData.notes || '');
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [showVaultModal, setShowVaultModal] = useState(false);
@@ -35,33 +37,82 @@ export function CandidateProfile() {
     { id: 3, action: 'Resume uploaded', date: 'Today' }
   ]);
 
+  // Load latest details from backend on mount (especially for secure pre-signed R2 URL!)
+  useEffect(() => {
+    const fetchLatestDetails = async () => {
+      // Don't call backend for numeric mock IDs
+      if (!isNaN(id)) return;
+      
+      try {
+        const token = await getAuthToken();
+        const response = await fetch(`${API_BASE_URL}/api/candidates/${id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (response.status === 401) {
+          window.location.href = '/signin';
+          return;
+        }
+        if (response.ok) {
+          const data = await response.json();
+          if (data.candidate) {
+            const c = data.candidate;
+            setCandidate({
+              ...c,
+              id: c._id,
+              role: c.current_role || c.role || '',
+              experience: c.experience_years ? `${c.experience_years} years` : (c.experience || '0 years'),
+              status: c.status || 'In Review'
+            });
+            if (c.notes) {
+              setNotes(c.notes);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('[CandidateProfile] Failed to fetch latest details from backend:', err.message);
+        if (err.message === 'Not authenticated') {
+          window.location.href = '/signin';
+        }
+      }
+    };
+    
+    fetchLatestDetails();
+  }, [id]);
+
   const showToast = (msg) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(''), 2500);
   };
 
-  const handleStageChange = (newStage) => {
+  const handleStageChange = async (newStage) => {
     setCandidate({ ...candidate, status: newStage });
+    await updateCandidateInDb(candidate.id, { status: newStage });
     setTimeline([{ id: Date.now(), action: `Stage changed to ${newStage}`, date: 'Just now' }, ...timeline]);
     showToast('Stage updated');
   };
 
-  const removeSkill = (skillToRemove) => {
+  const removeSkill = async (skillToRemove) => {
+    const updatedSkills = candidate.skills.filter(s => s !== skillToRemove);
     setCandidate({
       ...candidate,
-      skills: candidate.skills.filter(s => s !== skillToRemove)
+      skills: updatedSkills
     });
+    await updateCandidateInDb(candidate.id, { skills: updatedSkills });
   };
 
-  const saveNotes = () => {
+  const saveNotes = async () => {
     setIsSavingNotes(true);
-    setTimeout(() => {
+    try {
+      await updateCandidateInDb(candidate.id, { notes: notes });
+      setTimeline([{ id: Date.now(), action: 'Notes updated', date: 'Just now' }, ...timeline]);
+      showToast('Notes saved');
+    } catch (err) {
+      console.error('[CandidateProfile] Failed to save notes:', err.message);
+    } finally {
       setIsSavingNotes(false);
-      if (notes.trim()) {
-        setTimeline([{ id: Date.now(), action: 'Notes updated', date: 'Just now' }, ...timeline]);
-        showToast('Notes saved');
-      }
-    }, 600);
+    }
   };
 
   const handleExport = () => {
@@ -82,9 +133,48 @@ export function CandidateProfile() {
     XLSX.writeFile(wb, `${candidate.name.replace(/\s+/g, '_')}-profile.xlsx`);
   };
 
-  const handleMoveToVault = () => {
-    showToast('Moved to Vault successfully');
-    setTimeout(() => navigate('/candidates'), 1500);
+  const handleMoveToVault = async () => {
+    const success = await deleteCandidateFromDb(candidate.id || candidate._id);
+    if (success) {
+      showToast('Moved to Vault successfully');
+      setTimeout(() => navigate('/candidates'), 1500);
+    } else {
+      showToast('Failed to archive candidate.');
+    }
+  };
+
+  const [isViewingResume, setIsViewingResume] = useState(false);
+
+  const handleViewResume = async () => {
+    setIsViewingResume(true);
+    try {
+      const token = await getAuthToken();
+      const response = await fetch(`${API_BASE_URL}/api/candidates/${candidate.id || candidate._id}/resume`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          showToast('No original resume found for this candidate');
+          return;
+        }
+        throw new Error('Failed to fetch resume');
+      }
+      
+      const data = await response.json();
+      if (data.url) {
+        window.open(data.url, '_blank', 'noopener,noreferrer');
+      } else {
+        showToast('No resume file associated with this candidate');
+      }
+    } catch (err) {
+      console.error('[CandidateProfile] Failed to open resume:', err.message);
+      showToast('Error opening resume file');
+    } finally {
+      setIsViewingResume(false);
+    }
   };
 
   const getStatusColor = (status) => {
@@ -113,6 +203,13 @@ export function CandidateProfile() {
               <span>My Candidates</span>
             </button>
             <div className="top-actions">
+              <button 
+                className="btn-ghost-teal" 
+                onClick={handleViewResume}
+                disabled={isViewingResume}
+              >
+                {isViewingResume ? 'Loading...' : 'View Resume'}
+              </button>
               <button className="btn-ghost-teal" onClick={handleExport}>Export Profile</button>
               <button className="btn-ghost-grey" onClick={() => setShowVaultModal(true)}>Move to Vault</button>
             </div>
@@ -225,14 +322,15 @@ export function CandidateProfile() {
                 <h3 className="section-heading">RESUME</h3>
                 <div className="resume-display">
                   <FileText size={40} className="resume-icon" />
-                  <span className="resume-filename">resume.pdf</span>
+                  <span className="resume-filename">{candidate.resumeKey ? candidate.resumeKey.split('/').pop() : 'resume.pdf'}</span>
                 </div>
                 <button className="btn-ghost-teal-full" onClick={() => {
-                  const link = document.createElement('a');
-                  link.href = 'data:application/pdf;base64,';
-                  link.download = 'resume.pdf';
-                  link.click();
-                }}>Download Resume</button>
+                  if (candidate.resumeUrl) {
+                    window.open(candidate.resumeUrl, '_blank');
+                  } else {
+                    showToast('No resume file associated.');
+                  }
+                }}>View & Download Resume</button>
               </div>
 
             </div>

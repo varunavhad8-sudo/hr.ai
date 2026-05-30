@@ -1,15 +1,113 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { API_BASE_URL } from '../config';
+import { auth } from '../utils/firebase';
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from 'firebase/auth';
 import './SignIn.css';
+import { useAppContext } from '../AppContext';
 
 export function SignIn() {
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
   const navigate = useNavigate();
+  const { setCurrentUser } = useAppContext();
 
-  const handleSignIn = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    navigate('/dashboard');
+    if (!email || !password) return;
+    setErrorMsg('');
+    setIsLoading(true);
+
+    try {
+      // 1. Sign in with Firebase
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
+      const idToken = await firebaseUser.getIdToken();
+
+      // 2. Synchronize with Backend
+      const response = await fetch(`${API_BASE_URL}/api/auth/sync`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
+        body: JSON.stringify({
+          email: firebaseUser.email,
+          name: firebaseUser.displayName || email.split('@')[0]
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Authentication sync failed on backend database');
+      }
+
+      const data = await response.json();
+      console.log('AUTH SYNC RESPONSE:', data);
+      const dbUser = data.user;
+
+      // Store persistent user details in localStorage
+      localStorage.setItem('user-name', dbUser.name || email.split('@')[0]);
+      localStorage.setItem('user-email', dbUser.email);
+      localStorage.setItem('user-id', dbUser._id);
+      localStorage.setItem('user-firebase-uid', dbUser.firebaseUid);
+
+      setCurrentUser(dbUser);
+
+      navigate('/dashboard');
+    } catch (err) {
+      console.error('[SignIn] error:', err.message);
+      setErrorMsg(err.message.includes('auth/invalid-credential') 
+        ? 'Invalid email or password. Please try again.' 
+        : 'Sign in failed: ' + err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
+    setErrorMsg('');
+    try {
+      const provider = new GoogleAuthProvider();
+      const userCredential = await signInWithPopup(auth, provider);
+      const firebaseUser = userCredential.user;
+      const idToken = await firebaseUser.getIdToken();
+
+      const response = await fetch(`${API_BASE_URL}/api/auth/sync`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
+        body: JSON.stringify({
+          email: firebaseUser.email,
+          name: firebaseUser.displayName || 'Google User',
+          picture: firebaseUser.photoURL || ''
+        })
+      });
+
+      if (!response.ok) throw new Error('Google Auth Sync failed');
+      const data = await response.json();
+      console.log('AUTH SYNC RESPONSE:', data);
+
+      localStorage.setItem('user-name', data.user.name || 'Google User');
+      localStorage.setItem('user-email', data.user.email);
+      localStorage.setItem('user-id', data.user._id);
+      localStorage.setItem('user-firebase-uid', data.user.firebaseUid);
+
+      setCurrentUser(data.user);
+
+      navigate('/dashboard');
+    } catch (err) {
+      console.error('[SignIn] Google error:', err.message);
+      setErrorMsg('Google login failed: ' + err.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -24,7 +122,13 @@ export function SignIn() {
           <p className="signin-subtitle">Sign in to your workspace</p>
         </div>
 
-        <button className="btn-google">
+        {errorMsg && (
+          <div className="signin-error" style={{ color: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', padding: '0.75rem', borderRadius: '8px', fontSize: '0.875rem', marginBottom: '1.25rem', textAlign: 'center' }}>
+            {errorMsg}
+          </div>
+        )}
+
+        <button className="btn-google" onClick={handleGoogleSignIn} disabled={isLoading}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
             <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -38,40 +142,61 @@ export function SignIn() {
           <span>or</span>
         </div>
 
-        <form className="signin-form" onSubmit={handleSignIn}>
+        <form className="signin-form" onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="email">Email</label>
-            <input type="email" id="email" placeholder="name@company.com" />
+            <input 
+              type="email" 
+              id="email" 
+              placeholder="name@company.com" 
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={isLoading}
+            />
           </div>
 
           <div className="form-group">
             <div className="password-header">
               <label htmlFor="password">Password</label>
-              <a href="#" className="forgot-password">Forgot password?</a>
+              <a href="#" className="forgot-password" onClick={(e) => e.preventDefault()}>Forgot password?</a>
             </div>
             <div className="password-input-wrapper">
               <input 
                 type={showPassword ? "text" : "password"} 
                 id="password" 
                 placeholder="Enter your password" 
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={isLoading}
               />
               <button 
                 type="button" 
                 className="btn-toggle-password" 
                 onClick={() => setShowPassword(!showPassword)}
                 aria-label="Toggle password visibility"
+                disabled={isLoading}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
           </div>
 
-          <button type="submit" className="btn-submit">Sign In</button>
+          <button type="submit" className="btn-submit" disabled={isLoading}>
+            {isLoading ? (
+              <span className="btn-submit-loader">
+                <Loader2 className="spinner" size={18} /> Loading...
+              </span>
+            ) : (
+              'Sign In'
+            )}
+          </button>
         </form>
 
         <div className="signin-footer">
           <span className="footer-text">Don't have an account?</span>
-          <a href="#" className="footer-link">Get started free</a>
+          <Link to="/signup" className="footer-link">Get started free</Link>
         </div>
       </div>
     </div>

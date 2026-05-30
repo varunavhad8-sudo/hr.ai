@@ -25,7 +25,7 @@
 
 .btn-new-folder {
   background-color: var(--accent-color);
-  color: var(--text-main);
+  color: #0a0a0a;
   border: none;
   border-radius: 0.5rem; /* rounded-lg */
   padding: 0.75rem 1.25rem;
@@ -118,7 +118,7 @@
 
 .btn-create-teal {
   background-color: var(--accent-color);
-  color: var(--text-main);
+  color: #0a0a0a;
   border: none;
   border-radius: 0.5rem;
   padding: 0.75rem 1.5rem;
@@ -394,7 +394,7 @@
 
 .btn-create {
   background-color: var(--accent-color);
-  color: var(--text-main);
+  color: #0a0a0a;
   border: none;
   padding: 0.625rem 1.25rem;
   border-radius: 0.5rem;

@@ -22,3 +22,23 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Important Keys and Secrets
+.env
+.env.*
+*.key
+*.pem
+*.crt
+*.cer
+secrets.json
+config.json
+
+# Important Documents
+*.pdf
+*.doc
+*.docx
+*.xls
+*.xlsx
+*.ppt
+*.pptx
+*.csv

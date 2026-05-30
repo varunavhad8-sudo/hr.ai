@@ -1,0 +1,138 @@
+.comparison-section {
+  padding: 8rem 0;
+  position: relative;
+  background-color: var(--bg-color);
+  overflow: hidden;
+}
+
+.comparison-header {
+  text-align: center;
+  max-width: 650px;
+  margin: 0 auto 5rem auto;
+}
+
+.comparison-header h2 {
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  font-weight: 700;
+  margin-bottom: 1.25rem;
+  color: var(--text-main);
+  letter-spacing: -0.02em;
+}
+
+.comparison-header p {
+  font-size: clamp(1rem, 2vw, 1.125rem);
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+/* Glassmorphic Table Container */
+.comparison-table-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid var(--border-color);
+  border-radius: 24px;
+  padding: 1rem;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3);
+  overflow-x: auto;
+  perspective: 1200px;
+}
+
+.comparison-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 750px; /* ensure table doesn't squish on small viewports */
+}
+
+/* Table Header Styles */
+.comparison-table th {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-main);
+  padding: 2rem 1.5rem;
+  text-align: center;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.comparison-table th:first-child {
+  text-align: left;
+  width: 32%;
+}
+
+.comparison-table th:not(:first-child) {
+  width: 22.6%;
+}
+
+/* Table Body Styles */
+.comparison-row {
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.comparison-table td {
+  padding: 1.75rem 1.5rem;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  vertical-align: middle;
+}
+
+.comparison-row:last-child td {
+  border-bottom: none;
+}
+
+.comparison-table td:first-child {
+  text-align: left;
+  font-weight: 500;
+  color: var(--text-main);
+  font-size: 1.05rem;
+}
+
+/* Glowing Selected Column Frame (HR.ai Column) */
+.col-hrai {
+  background: rgba(255, 255, 255, 0.015);
+  border-left: 1.5px solid rgba(255, 255, 255, 0.12);
+  border-right: 1.5px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-main) !important;
+  font-weight: 500;
+  position: relative;
+  will-change: background-color, border-color;
+}
+
+/* Pulse styles applied directly via GSAP */
+.comparison-table th.col-hrai {
+  border-top: 1.5px solid rgba(255, 255, 255, 0.25);
+  border-radius: 16px 16px 0 0;
+}
+
+.comparison-row:last-child td.col-hrai {
+  border-bottom: 1.5px solid rgba(255, 255, 255, 0.25);
+  border-radius: 0 0 16px 16px;
+}
+
+/* Custom drawing checkmark classes */
+.checkmark-svg {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.checkmark-path {
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+}
+
+/* Competitor / Sheet texts */
+.comparison-text-negative {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.comparison-text-neutral {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.comparison-text-positive {
+  color: var(--accent-color);
+  font-weight: 600;
+}

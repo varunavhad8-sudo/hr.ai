@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { API_BASE_URL } from './config';
+import getAuthToken from './utils/getAuthToken';
 
 const AppContext = createContext();
 
@@ -7,10 +9,47 @@ export function AppProvider({ children }) {
     return localStorage.getItem('app-theme') || 'light';
   });
 
+  const [currentUser, setCurrentUserRaw] = useState(null);
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
+
+  // Use this everywhere so setting a user always marks loading as done
+  const setCurrentUser = (user) => {
+    setCurrentUserRaw(user);
+    setIsLoadingUser(false);
+  };
+
+  const fetchCurrentUser = async () => {
+    setIsLoadingUser(true);
+    try {
+      const token = await getAuthToken();
+      const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        console.log('[AppContext] CURRENT USER SET:', data.user);
+        setCurrentUserRaw(data.user);
+      } else {
+        setCurrentUserRaw(null);
+      }
+    } catch (err) {
+      console.warn('[AppContext] Failed to fetch current user:', err.message);
+      setCurrentUserRaw(null);
+    } finally {
+      setIsLoadingUser(false);
+    }
+  };
+
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('app-theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    fetchCurrentUser();
+  }, []);
 
   const [stats, setStats] = useState({
     total: 0,
@@ -36,15 +75,242 @@ export function AppProvider({ children }) {
     { id: 14, name: 'Divya Sharma', email: 'divya.s@example.com', role: 'HR Manager', company: 'PeopleFirst', experience: '7 years', skills: ['Recruitment', 'Employee Relations'], status: 'On Hold', addedOn: 'Sep 01, 2023', addedDaysAgo: '55 days ago' }
   ].sort((a, b) => new Date(b.addedOn) - new Date(a.addedOn));
 
-  const [candidates, setCandidates] = useState(initialCandidates);
+  const [candidates, setCandidates] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // Global Folders State with sample folders and mapped candidates
-  const [folders, setFolders] = useState([
-    { id: 1, name: 'Python Developers', candidateIds: [6, 12, 3], createdAt: '2023-10-25' },
-    { id: 2, name: 'Frontend Engineers', candidateIds: [1, 7], createdAt: '2023-10-26' },
-    { id: 3, name: 'Marketing Team', candidateIds: [4], createdAt: '2023-10-27' },
-    { id: 4, name: 'Data Scientists', candidateIds: [6, 12, 1, 8], createdAt: '2023-10-28' },
-  ]);
+  // Global Folders State
+  const [folders, setFolders] = useState([]);
+
+  // Load candidates from the backend
+  const loadCandidates = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const token = await getAuthToken();
+      const response = await fetch(`${API_BASE_URL}/api/candidates`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.status === 401) {
+        window.location.href = '/signin';
+        return;
+      }
+      if (!response.ok) {
+        throw new Error('Failed to retrieve candidates from backend');
+      }
+      const data = await response.json();
+      const loaded = (data.candidates || []).map(c => {
+        const addedDate = new Date(c.createdAt || Date.now());
+        const daysAgo = Math.floor((Date.now() - addedDate) / (1000 * 60 * 60 * 24));
+        return {
+          ...c,
+          id: c._id, // Map MongoDB string ObjectId as id
+          role: c.current_role || c.role || 'Candidate',
+          company: c.company || 'Direct Upload',
+          experience: c.experience_years ? `${c.experience_years} years` : (c.experience || '0 years'),
+          addedOn: addedDate.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+          addedDaysAgo: daysAgo === 0 ? 'Today' : daysAgo === 1 ? '1 day ago' : `${daysAgo} days ago`,
+          status: c.status || 'In Review'
+        };
+      });
+      setCandidates(loaded);
+      setStats({
+        total: loaded.length,
+        thisMonth: loaded.filter(c => {
+          const addedDate = new Date(c.createdAt || Date.now());
+          return addedDate.getMonth() === new Date().getMonth();
+        }).length,
+        saved: loaded.length
+      });
+    } catch (err) {
+      console.warn('[AppContext] Candidate loading failed:', err.message);
+      setError(err.message);
+      if (err.message === 'Not authenticated') {
+        const path = window.location.pathname;
+        if (path !== '/signin' && path !== '/signup' && path !== '/') {
+          window.location.href = '/signin';
+        }
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadCandidates();
+  }, []);
+
+  // Delete candidate action
+  const deleteCandidateFromDb = async (id) => {
+    setIsLoading(true);
+    try {
+      const token = await getAuthToken();
+      const response = await fetch(`${API_BASE_URL}/api/candidates/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.status === 401) {
+        window.location.href = '/signin';
+        return false;
+      }
+      if (response.ok) {
+        setCandidates(prev => prev.filter(c => c._id !== id && c.id !== id));
+        setStats(prev => ({
+          ...prev,
+          total: Math.max(0, prev.total - 1),
+          saved: Math.max(0, prev.saved - 1)
+        }));
+        return true;
+      }
+    } catch (err) {
+      console.error('[AppContext] Failed to delete candidate from backend:', err.message);
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+    return false;
+  };
+
+  // Update candidate details in backend
+  const updateCandidateInDb = async (id, updatedFields) => {
+    setIsLoading(true);
+    try {
+      // Map fields to backend schema
+      const backendFields = { ...updatedFields };
+      if (updatedFields.role !== undefined) backendFields.current_role = updatedFields.role;
+      if (updatedFields.experience !== undefined) {
+        const match = String(updatedFields.experience).match(/\d+/);
+        backendFields.experience_years = match ? parseInt(match[0]) : 0;
+      }
+
+      const token = await getAuthToken();
+      const response = await fetch(`${API_BASE_URL}/api/candidates/${id}`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(backendFields),
+      });
+
+      if (response.status === 401) {
+        window.location.href = '/signin';
+        return false;
+      }
+
+      if (response.ok) {
+        const data = await response.json();
+        const updated = data.candidate;
+        setCandidates(prev => prev.map(c => {
+          if (c._id === id || c.id === id) {
+            const addedDate = new Date(updated.createdAt || Date.now());
+            const daysAgo = Math.floor((Date.now() - addedDate) / (1000 * 60 * 60 * 24));
+            return {
+              ...c,
+              ...updated,
+              id: updated._id,
+              role: updated.current_role || updated.role || '',
+              experience: updated.experience_years ? `${updated.experience_years} years` : (updated.experience || '0 years'),
+              addedDaysAgo: daysAgo === 0 ? 'Today' : daysAgo === 1 ? '1 day ago' : `${daysAgo} days ago`,
+            };
+          }
+          return c;
+        }));
+        return true;
+      }
+    } catch (err) {
+      console.error('[AppContext] Failed to update candidate in backend:', err.message);
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+    return false;
+  };
+
+  // Create candidate with resume in backend
+  const createCandidateInDb = async (formData) => {
+    setIsLoading(true);
+    try {
+      const token = await getAuthToken();
+      const response = await fetch(`${API_BASE_URL}/api/candidates`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData, // FormData automatically sets multipart/form-data boundary
+      });
+
+      if (response.status === 401) {
+        window.location.href = '/signin';
+        return null;
+      }
+
+      if (response.ok) {
+        const data = await response.json();
+        const created = data.candidate;
+        const addedDate = new Date(created.createdAt || Date.now());
+        const daysAgo = Math.floor((Date.now() - addedDate) / (1000 * 60 * 60 * 24));
+        const newCandidate = {
+          ...created,
+          id: created._id,
+          role: created.current_role || created.role || '',
+          experience: created.experience_years ? `${created.experience_years} years` : (created.experience || '0 years'),
+          addedDaysAgo: daysAgo === 0 ? 'Today' : daysAgo === 1 ? '1 day ago' : `${daysAgo} days ago`,
+          addedOn: addedDate.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
+        };
+        
+        setCandidates(prev => [newCandidate, ...prev]);
+        return newCandidate;
+      } else {
+        throw new Error('Failed to create candidate');
+      }
+    } catch (err) {
+      console.error('[AppContext] Failed to create candidate in backend:', err.message);
+      setError(err.message);
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const bulkImportCandidates = async (candidatesArray) => {
+    setIsLoading(true);
+    try {
+      const token = await getAuthToken();
+      const response = await fetch(`${API_BASE_URL}/api/candidates/bulk`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ candidates: candidatesArray }),
+      });
+
+      if (response.status === 401) {
+        window.location.href = '/signin';
+        return null;
+      }
+
+      if (response.ok) {
+        const data = await response.json();
+        await loadCandidates();
+        return data;
+      } else {
+        const errData = await response.json();
+        throw new Error(errData.error || 'Failed to bulk import candidates');
+      }
+    } catch (err) {
+      console.error('[AppContext] Failed to bulk import:', err.message);
+      setError(err.message);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const incrementStats = () => {
     setStats(prev => ({
@@ -86,8 +352,11 @@ export function AppProvider({ children }) {
   return (
     <AppContext.Provider value={{ 
       theme, setTheme,
+      currentUser, setCurrentUser, fetchCurrentUser, isLoadingUser,
       stats, incrementStats, 
       candidates, setCandidates,
+      isLoading, error,
+      loadCandidates, deleteCandidateFromDb, updateCandidateInDb, createCandidateInDb, bulkImportCandidates,
       folders, createFolder, deleteFolder, renameFolder, addCandidateToFolder
     }}>
       {children}
